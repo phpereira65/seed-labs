@@ -1,0 +1,343 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Copyright by Wenliang Du.                                       %%
+%%  This work is licensed under the Creative Commons                %%
+%%  Attribution-NonCommercial-ShareAlike 4.0 International License. %%
+%%  To view a copy of this license, visit                           %%
+%%  http://creativecommons.org/licenses/by-nc-sa/4.0/.              %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{../../common-files/header}
+\input{../../common-files/copyright}
+
+
+\lhead{\bfseries SEED Labs -- Laboratório de Ataque de Envenenamento do Cache ARP}
+\newcommand{\arpFigs}{./Figs}
+
+
+\begin{document}
+	
+	
+	
+	\begin{center}
+		{\LARGE Laboratório de Ataque de Envenenamento do Cache ARP}
+	\end{center}
+	
+	\seedlabcopyright{2019}
+	
+	
+	
+	% *******************************************
+	% SECTION
+	% ******************************************* 
+	\section{Visão geral}
+	
+	
+	O protocolo de resolução de endereços (ARP) é um protocolo de comunicação usado para descobrir o link
+	endereço de camada, como o endereço MAC, dado um endereço IP. O protocolo ARP é muito simples
+	protocolo e não implementa nenhuma medida de segurança.
+	O ataque de envenenamento de cache ARP é um ataque comum contra o protocolo ARP.
+	Usando esse tipo de ataque, os invasores podem fazer a vítima aceitar
+	mapeamentos IP para MAC forjados. Isso pode fazer com que os pacotes da vítima sejam
+	redirecionado para o computador com o endereço MAC forjado, levando a
+	potenciais ataques man-in-the-middle.
+	
+	
+	O objetivo deste laboratório é que os alunos obtenham a experiência prática no ataque de envenenamento da tabela ARP e aprenda quais danos podem ser causados ​​por tal ataque.
+	Em particular, os alunos usarão o ataque ARP para lançar um ataque man-in-the-middle,
+	onde o invasor pode interceptar e modificar os pacotes entre as duas vítimas A e B.
+	Outro objetivo deste laboratório é que os alunos pratiquem
+	habilidades de sniffing e spoofing de pacotes, pois estas são
+	habilidades essenciais em segurança de rede, e são os blocos de construção
+	para muitas ferramentas de ataque e defesa de rede.
+	Os alunos usarão o Scapy para realizar tarefas de laboratório.
+	Este laboratório cobre os seguintes tópicos:
+	
+	\begin{itemize}[noitemsep]
+		\item O protocolo ARP
+		\item O ataque de envenenamento do cache ARP
+		\item Ataque Man-in-the-middle
+		\item Programando o Scapy
+	\end{itemize}
+	
+	
+	
+	\paragraph{Videos.}
+	Detalhes sobre o protocolo ARP protocol e respectivos ataques podem ser encontrados em:
+	
+	\begin{itemize}
+		\item Seção 3 do curso SEED Lecture na Udemy, \seedisvideo
+	\end{itemize}
+	
+	
+	\paragraph{Ambiente do Laboratório.} \seedenvironment
+	
+	
+	% *******************************************
+	% SECTION
+	% ******************************************* 
+	\section{Tarefa 1: Envenenamento do cache ARP}
+	
+	
+	O objetivo desta tarefa é usar o spoofing de pacotes para lançar um ataque de envenenamento de cache ARP em
+	um alvo, de modo que, quando duas máquinas vítimas A e B tentam se comunicar, seus 
+	pacotes serão interceptados pelo invasor, que pode fazer alterações nos pacotes e, portanto,
+	tornar-se o "homem no meio" (man-in-the-middle) entre A e B. Isso é chamado de ataque Man-In-The-Middle (MITM).
+	Neste laboratório, usamos envenenamento de cache ARP para conduzir um ataque MITM. 
+	
+	
+	
+	O código abaixo mostra como criar um pacote ARP usando o Scapy.
+	
+	\begin{lstlisting}
+	#!/usr/bin/python3
+	from scapy.all import *
+	
+	E = Ether()
+	A = ARP()
+	
+	pkt = E/A
+	sendp(pkt)
+	\end{lstlisting}
+	
+	O programa acima constrói e envia um pacote ARP. É necessário definir os nomes/valores de atributos 
+	necessários para definir seu próprio pacote ARP. Podemos usar \texttt{ls (ARP)} para ver o atributo
+	de nomes da classe ARP. Se um campo não for definido, um valor padrão será usado (veja a terceira
+	coluna da saída):
+	
+	\begin{lstlisting}
+	$ python3
+	>>> from scapy.all import *
+	>>> ls(ARP)
+	hwtype     : XShortField                         = (1)
+	ptype      : XShortEnumField                     = (2048)
+	hwlen      : ByteField                           = (6)
+	plen       : ByteField                           = (4)
+	op         : ShortEnumField                      = (1)
+	hwsrc      : ARPSourceMACField                   = (None)
+	psrc       : SourceIPField                       = (None)
+	hwdst      : MACField                            = ('00:00:00:00:00:00')
+	pdst       : IPField                             = ('0.0.0.0')
+	\end{lstlisting}
+	
+	Nesta tarefa, temos três VMs, A, B e M. Gostaríamos de atacar o cache ARP de A, de forma que
+	os seguintes resultados sejam obtidos no cache ARP de A.
+	
+	\begin{lstlisting}
+	B's IP address --> M's MAC address
+	\end{lstlisting}
+	
+	Existem muitas maneiras de conduzir um ataque de envenenamento do cache ARP. Os alunos precisam 
+	tentar os três métodos a seguir e relatar se cada método funciona ou não.
+	
+	
+	\begin{itemize}
+		\item \textbf{Tarefa 1A (usando requisição ARP).} No Host M, construa um pacote de solicitação ARP e envie
+		para o Host A. Verifique se o endereço MAC de M está mapeado para o endereço de IP do Host B no cache ARP do Host A.
+		
+		
+		\item \textbf{Tarefa 1B (usando resposta ARP).} On Host M, construct an ARP reply packet and send to
+		Host A. Check whether M's MAC address is mapped to B's IP address in A's ARP cache.
+		
+		No Host M, construa um pacote de resposta ARP e envie para o
+		Host A. Verifique se o endereço MAC de M está mapeado para o endereço de IP do Host B no cache ARP do Host A.
+		
+		
+		
+		\item \textbf{Tarefa 1C (usando mensagem ARP gratuita).} No Host M, construa um pacote ARP gratuito. O pacote ARP gratuito 
+		é um pacote especial de solicitação ARP. É usado quando um Host precisa atualizar 
+		informações desatualizadas em todo o cache ARP da outra máquina. O pacote de ARP gratuito
+		tem as seguintes características:
+		
+		
+		\begin{itemize}
+			\item Os endereços IP de origem e destino são os mesmos e são 
+			o endereço IP do Host que está emitindo o ARP gratuito.
+			
+			\item Os endereços MAC de destino no cabeçalho ARP e no cabeçalho Ethernet são o endereço 
+			MAC de transmissão ({\tt ff:ff:ff:ff:ff:ff}).
+			
+			\item Nenhuma resposta é esperada.
+		\end{itemize}
+	\end{itemize}
+	
+	
+	
+	% *******************************************
+	% SECTION
+	% ******************************************* 
+	\section{Tarefa 2: Ataque MITM no Telnet usando envenenamento do Cache ARP Cache}
+	
+	Os Hosts A e B estão se comunicando usando Telnet e o Host M deseja interceptar essa
+	comunicação para que possa fazer alterações nos dados enviados entre A e B. A configuração é representada
+	na figura~\ref{arp:fig:telnet_mitm}. 
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.8\textwidth]{\arpFigs/telnet_mitm.pdf}
+		\caption{Man-In-The-Middle Attack against telnet}
+		\label{arp:fig:telnet_mitm}
+	\end{figure}
+	
+	
+	\paragraph{Passo 1 (Inicie o ataque de envenenamento de cache ARP).} Primeiro, o Host M conduz um 
+	ataque de envenenamento docache ARP nos Hosts A e B, de modo que no cache ARP de A, o endereço IP de B mapeie para o MAC de M
+	e no cache ARP de B, o endereço IP de A também mapeie para o endereço MAC de M. Após essa etapa,
+	pacotes enviados entre A e B serão todos enviados para M. Usaremos o ataque de envenenamento de cache ARP
+	da Tarefa 1 para atingir este objetivo. 
+	
+	
+	\paragraph{Passo 2 (Testando).} Depois que o ataque for bem-sucedido, tente fazer ping um no outro
+	entre os Hosts A e B, e relate sua observação. Por favor, mostre os resultados do Wireshark em seu
+	relatório.
+	
+	\paragraph{Passo 3 (Ative o encaminhamento de IP).} Agora, ativado o encaminhamento de IP no Host M, para que ele possa
+	encaminhar os pacotes entre A e B. Execute o seguinte comando e repita o Passo 2.
+	Descreva a sua observação.
+	
+	\begin{lstlisting}
+	$ sudo sysctl net.ipv4.ip_forward=1
+	\end{lstlisting}
+	
+	\paragraph{Passo 4 (Execute o ataque MITM).} Estamos prontos para fazer alterações nos dados Telnet
+	entre A e B. Suponha que A seja o cliente Telnet e B o servidor Telnet. Depois que A se conectou 
+	ao servidor Telnet em B, para cada tecla digitada na janela Telnet de A, um TCP
+	pacote é gerado e enviado para B. Gostaríamos de interceptar o pacote TCP e substituir cada 
+	caractere digitado com um caractere fixo (digamos Z). Dessa forma, não importa o que o usuário
+	digitar em A, o Telnet sempre exibirá Z.
+	
+	Das etapas anteriores, somos capazes de redirecionar os pacotes TCP para o Host M, mas em vez de
+	encaminhá-los, gostaríamos de substituí-los por um pacote falsificado. Vamos escrever um
+	programa sniff-and-spoof para atingir esse objetivo. Em particular, gostaríamos de fazer o
+	seguinte:
+	
+	\begin{itemize}
+		
+		\item Primeiro, mantemos o encaminhamento de IP ativado, para que possamos criar uma conexão Telnet com sucesso
+		entre A e B. Assim que a conexão for estabelecida, desligamos o encaminhamento de IP usando o
+		seguinte comando. Digite algo na janela Telnet de A e relate sua observação: 
+		
+		\begin{lstlisting}
+		$ sudo sysctl net.ipv4.ip_forward=0
+		\end{lstlisting}
+		
+		\item Executamos nosso programa sniff-and-spoof no Host M, de modo que para os pacotes capturados enviados
+		de A para B, falsificamos um pacote, mas com dados TCP diferentes. Para pacotes de B para A (resposta Telnet), 
+		não fazemos nenhuma alteração, então o pacote falsificado é exatamente o mesmo que o original.
+	\end{itemize} 
+	
+	Para ajudar os alunos a começar, oferecemos um exemplo de um programa sniff-and-spoof. 
+	O programa captura todos os pacotes TCP, e
+	então para pacotes enviados de A para B, ele faz algumas mudanças (a parte da modificação
+	não está incluída, porque faz parte da tarefa). Para pacotes enviados de
+	B para A, o programa simplesmente encaminha os pacotes originais.
+	
+	\begin{lstlisting}
+	#!/usr/bin/python3
+	from scapy.all import *
+	
+	VM_A_IP = "10.0.2.6"
+	VM_B_IP = "10.0.2.7"
+	
+	def spoof_pkt(pkt):
+	if pkt[IP].sr == VM_A_IP and pkt[IP].dst == VM_B_IP \
+	and pkt[TCP].payload:
+	
+	# Cria um novo pacote com base no pacote capturado.
+	# (1) Precisamos excluir os campos de soma de verificação nos cabeçalhos IP e TCP,
+	# porque nossa modificação os tornará inválidos.
+	# O Scapy irá recalculá-los para nós se esses campos estiverem faltando.
+	# (2) Excluímos também a carga útil do TCP original.
+	newpkt = IP(pkt[IP])
+	del(newpkt.chksum)  
+	del(newpkt[TCP].chksum) 
+	del(newpkt[TCP].payload) 
+	
+	#####################################################################
+	# Construa a nova carga com base na antiga.
+	# Os alunos precisam implementar essa parte.
+	
+	olddata = pkt[TCP].payload.load   # Get the original payload data 
+	newdata = olddata  # No change is made in this sample code
+	#####################################################################
+	
+	# Anexe os novos dados e configure o pacote
+	send(newpkt/newdata)
+	
+	elif pkt[IP].src == VM_B_IP and pkt[IP].dst == VM_A_IP:
+	send(pkt[IP]) # Forward the original packet
+	
+	pkt = sniff(filter='tcp',prn=spoof_pkt)
+	\end{lstlisting}
+	
+	
+	Deve-se notar que o código acima captura todo os pacotes TCP,
+	incluindo aquele gerado pelo próprio programa. Isso é
+	indesejável, pois afetará
+	o desempenho. Os alunos precisam mudar o filtro, para que o programa não capture
+	seus próprios pacotes.
+	
+	
+	\paragraph{Behavior of Telnet.}
+	No Telnet, normalmente, cada caractere que digitamos na seu terminal é acionado
+	um pacote TCP individual, mas se você digitar muito rápido, alguns caracteres podem ser
+	enviados juntos no mesmo pacote.
+	É por isso que em um típico pacote Telnet enviado do cliente para o servidor,
+	a carga útil contém apenas um caractere. O 
+	caractere enviado ao servidor será ecoado de volta pelo servidor,
+	e o cliente então exibirá o
+	caractere em sua janela. Portanto, o que vemos na janela do cliente não é o resultado direto
+	da digitação; tudo o que digitarmos na janela do cliente fará uma viagem completa antes de ser exibido.
+	Se a rede estiver desconectada, tudo o que digitamos na janela do cliente não será exibido,
+	até que a rede seja recuperada. Da mesma forma, se os atacantes mudarem o caractere para Z durante o
+	ida e volta, Z será exibido na janela do cliente Telnet, embora
+	não foi isso que você digitou.
+	
+	
+	
+	
+	
+	% *******************************************
+	% SECTION
+	% ******************************************* 
+	\section{Tarefa 3: Ataque MITM no Netcat usando Envenenamento do cache ARP}
+	
+	Esta tarefa é semelhante à Tarefa 2, exceto que
+	os hosts A e B estão se comunicando usando \texttt{netcat}, ao invés de \texttt{telnet}.
+	O Host M deseja interceptar sua
+	comunicação, para que possa fazer alterações nos dados enviados entre A e B.
+	Você pode usar os seguintes comandos para estabelecer um \ texttt {netcat} TCP
+	conexão entre A e B:
+	
+	
+	\begin{lstlisting}
+	No Host B (servidor, endereço de IP 10.0.2.7), rode o seguinte comando:
+	$ nc -l 9090
+	
+	No Host A (cliente), rode o seguinte comando:
+	$ nc 10.0.2.7 9090
+	\end{lstlisting}
+	
+	
+	Assim que a conexão for estabelecida, você pode digitar mensagens em A.
+	Cada linha de mensagem será colocada em um pacote TCP enviado
+	para B, que simplesmente exibe a mensagem.
+	Sua tarefa é substituir todas as ocorrências de seu primeiro nome na
+	mensagem com uma sequência de A's. O comprimento da sequência deve ser o
+	igual ao do seu primeiro nome, ou você bagunçará a sequência TCP
+	número e, portanto, toda a conexão TCP. Você precisa usar seu verdadeiro
+	primeiro nome, para sabermos que o trabalho foi feito por você.
+	
+	
+	
+	% *******************************************
+	% SECTION
+	% ******************************************* 
+	\section{Submissão}
+	
+	\seedsubmission
+	
+	
+\end{document}
+
+
+
